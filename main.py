@@ -2,6 +2,8 @@ import itertools
 from enum import Enum
 from typing import Callable, Iterator, Sequence, TypedDict
 
+from card_functions import CardFunctions
+
 
 class Player(Enum):
     P1 = 1
@@ -14,25 +16,43 @@ class Player(Enum):
         return self.__str__()
 
 
-class GameState(TypedDict):
-    p1_damage_dealt: int
-    p2_damage_dealt: int
-    p1_damage_received: int
-    p2_damage_received: int
-    p1_damage_blocked: int
-    p2_damage_blocked: int
+class PlayerState(TypedDict):
+    damage_dealt: int
+    damage_received: int
+    damage_blocked: int
+    current_block: int
     played_cards: Sequence["PlayerCard"]
 
     @staticmethod
-    def create_game_state():
-        game_state = GameState()
-        game_state["p1_damage_dealt"] = 0
-        game_state["p2_damage_dealt"] = 0
-        game_state["p1_damage_received"] = 0
-        game_state["p2_damage_received"] = 0
-        game_state["p1_damage_blocked"] = 0
-        game_state["p2_damage_blocked"] = 0
-        return game_state
+    def create_player_state():
+        player_state = PlayerState()
+        player_state["damage_dealt"] = 0
+        player_state["damage_received"] = 0
+        player_state["damage_blocked"] = 0
+        player_state["played_cards"] = []
+        return player_state
+
+
+class GameState:
+    def __init__(self) -> None:
+        self.p1 = PlayerState.create_player_state()
+        self.p2 = PlayerState.create_player_state()
+
+    def get_opponent(self, player: Player) -> Player:
+        if player == Player.P1:
+            return self.p2
+        return self.p1
+
+    def get_hero(self, player: Player) -> PlayerState:
+        if player == Player.P1:
+            return self.p1
+        return self.p2
+
+    def copy(self):
+        new_game_state = GameState()
+        new_game_state.p1 = self.p1.copy()
+        new_game_state.p2 = self.p2.copy()
+        return new_game_state
 
 
 class Card:
@@ -64,12 +84,6 @@ class PlayerCard:
 
     def __repr__(self):
         return self.__str__()
-
-
-class PlayerState(TypedDict):
-    damage_dealt: int
-    damage_received: int
-    damage_blocked: int
 
 
 class PlayerAction:
@@ -135,16 +149,14 @@ class GameBoard:
 
 
 def main():
-    game_state = GameState.create_game_state()
-    print(game_state)
     p1_card_types = ["Attack", "Attack", "Block"]
     p2_card_types = ["Block", "Block", "Attack"]
     p1_cards = [
-        PlayerCard(Player.P1, Card(card_type, lambda x: x))
+        PlayerCard(Player.P1, Card(card_type, CardFunctions.attack))
         for card_type in p1_card_types
     ]
     p2_cards = [
-        PlayerCard(Player.P2, Card(card_type, lambda x: x))
+        PlayerCard(Player.P2, Card(card_type, CardFunctions.attack))
         for card_type in p2_card_types
     ]
 
